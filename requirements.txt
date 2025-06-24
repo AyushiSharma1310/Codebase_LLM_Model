@@ -7,3 +7,4 @@ unstructured
 openai
 tiktoken
 groq
+python-dotenv
