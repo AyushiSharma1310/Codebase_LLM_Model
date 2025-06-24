@@ -1,0 +1,9 @@
+streamlit
+transformers
+torch
+langchain
+sentence-transformers
+unstructured
+openai
+tiktoken
+groq
