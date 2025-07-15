@@ -9,4 +9,5 @@ openai
 tiktoken
 groq
 python-dotenv
+python-dotenv
 faiss-cpu

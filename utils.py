@@ -1,11 +1,13 @@
 import os
 from dotenv import load_dotenv
-from langchain_community.document_loaders import PythonLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.vectorstores import FAISS          # ← updated
-from langchain_community.llms import OpenAI
-                # ← for Groq/OpenAI‑compatible completions
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain_core.documents import Document
+from groq import Groq
+import warnings
+
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 load_dotenv()
 
@@ -13,46 +15,75 @@ def load_and_split_code(path="codebase/"):
     docs = []
     for root, _, files in os.walk(path):
         for file in files:
-            if file.endswith(".py"):
-                full_path = os.path.join(root, file)
-                docs.extend(PythonLoader(full_path).load())
-
+            full_path = os.path.join(root, file)
+            try:
+                with open(full_path, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+                    if content.strip():
+                        docs.append(Document(page_content=content, metadata={"source": full_path}))
+                        print(f"Loaded: {full_path}")
+            except Exception as e:
+                print(f"Error loading {full_path}: {e}")
+    print(f"Loaded {len(docs)} files from {path}")
+    
     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
-    return splitter.split_documents(docs)
+    chunks = splitter.split_documents(docs)
+    print(f"Split into {len(chunks)} document chunks.")
+    return chunks
 
 def create_or_load_index(docs, persist_dir="vectorstore"):
-    # Use a free local embedding model instead of OpenAI/Groq
+    if not docs:
+        raise ValueError("No documents found to index.")
+
+    docs = [
+        doc for doc in docs
+        if isinstance(doc, Document) and hasattr(doc, "page_content") and isinstance(doc.page_content, str) and doc.page_content.strip()
+    ]
+
+    if not docs:
+        raise ValueError("No valid documents to index after filtering.")
+
     embeddings = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2",
         model_kwargs={'device': 'cpu'}
     )
-    
-    if os.path.exists(persist_dir):
-        return FAISS.load_local(persist_dir, embeddings, allow_dangerous_deserialization=True)
-    else:
+
+    try:
+        if os.path.exists(persist_dir):
+            db = FAISS.load_local(persist_dir, embeddings, allow_dangerous_deserialization=True)
+        else:
+            db = FAISS.from_documents(docs, embeddings)
+            db.save_local(persist_dir)
+    except Exception as e:
+        print(f"Index load/create error: {e}. Rebuilding...")
         db = FAISS.from_documents(docs, embeddings)
         db.save_local(persist_dir)
-        return db
 
-from groq import Groq
-import os
+    print("DEBUG: Returning db object from create_or_load_index")
+    return db
 
 def get_llm_response(query, db):
-    docs = db.similarity_search(query, k=5)
+    if db is None:
+        raise ValueError("The vector database is not initialized. Please create the index first.")
 
-    # ✅ Extract content
+    docs = db.similarity_search(query, k=5)
+    if not docs:
+        raise ValueError("No relevant documents found for your query.")
+
     content = "\n\n".join([doc.page_content for doc in docs if hasattr(doc, 'page_content')])
 
-    # ✅ Print for debugging
     print("=== INPUT SENT TO GROQ ===")
     print(content)
     print("==========================")
 
-    if not isinstance(content, str) or content.strip() == "":
+    if not isinstance(content, str) or not content.strip():
         raise ValueError("Invalid input to LLM: Must be a non-empty string.")
 
-    # ✅ Build the Groq client and send request
-    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key or not api_key.startswith("gsk_"):
+        raise ValueError("GROQ_API_KEY is missing or invalid. Please check your .env file or environment variable.")
+
+    client = Groq(api_key=api_key)
     response = client.chat.completions.create(
         model="llama3-70b-8192",
         messages=[
