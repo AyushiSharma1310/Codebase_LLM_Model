@@ -14,8 +14,8 @@ sys.modules["torch.classes"] = types.SimpleNamespace(__path__=[])
 load_dotenv()
 
 # --- Streamlit Page Config ---
-st.set_page_config(page_title="Code Assistant", page_icon="🧠", layout="wide")
-st.markdown("<h1 style='text-align:center;'>🧠 Welcome to Coding-AssistAnt</h1>", unsafe_allow_html=True)
+st.set_page_config(page_title="Codebase Assistant", page_icon="🐜", layout="wide")
+st.markdown("<h1 style='text-align:center;'>Welcome to Code-AssistAnt🐜</h1>", unsafe_allow_html=True)
 
 # --- Session State Initialization ---
 for key in ["index_created", "db", "uploaded", "processed_docs", "db_map", "current_file"]:
