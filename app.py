@@ -14,8 +14,8 @@ sys.modules["torch.classes"] = types.SimpleNamespace(__path__=[])
 load_dotenv()
 
 # --- Streamlit Page Config ---
-st.set_page_config(page_title="Codebase Assistant", page_icon="🐜", layout="wide")
-st.markdown("<h1 style='text-align:center;'>Welcome to Code-AssistAnt🐜</h1>", unsafe_allow_html=True)
+st.set_page_config(page_title="Code Assist-Ant", page_icon="🐜", layout="wide")
+st.markdown("<h1 style='text-align:center;'>Welcome to Code Assist-Ant🐜</h1>", unsafe_allow_html=True)
 
 # --- Session State Initialization ---
 for key in ["index_created", "db", "uploaded", "processed_docs", "db_map", "current_file"]:
@@ -108,7 +108,7 @@ if index_button:
                 st.sidebar.error(f"❌ Indexing failed: {e}")
 
 # --- Branding Header ---
-st.markdown("<h2 style='text-align: center;'>🤖 Codebase Assistant</h2>", unsafe_allow_html=True)
+st.markdown("<h2 style='text-align: center;'>🤖 Your Codebase Assistant</h2>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: gray;'>Upload. Index. Understand Your Code.</p>", unsafe_allow_html=True)
 
 # --- Layout Tabs ---
