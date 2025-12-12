@@ -16,12 +16,6 @@ load_dotenv()
 def load_and_split_code(path: str) -> list:
     """
     Loads all readable code files from the given path and splits them into chunks.
-    
-    Args:
-        path (str): Directory where code files are stored.
-
-    Returns:
-        List of Document chunks.
     """
     docs = []
     for root, _, files in os.walk(path):
@@ -47,13 +41,6 @@ def load_and_split_code(path: str) -> list:
 def create_or_load_index(docs: list, persist_dir: str) -> FAISS:
     """
     Creates or loads a FAISS vector index from document chunks.
-
-    Args:
-        docs (list): List of split Document chunks.
-        persist_dir (str): Directory to store the index.
-
-    Returns:
-        FAISS vectorstore object.
     """
     if not docs:
         raise ValueError("No documents provided for indexing.")
@@ -85,13 +72,6 @@ def create_or_load_index(docs: list, persist_dir: str) -> FAISS:
 def get_llm_response(query: str, db: FAISS) -> str:
     """
     Uses Groq LLM to get an answer for the given query using retrieved documents.
-
-    Args:
-        query (str): User question.
-        db (FAISS): FAISS vectorstore.
-
-    Returns:
-        LLM-generated response string.
     """
     if db is None:
         raise ValueError("Vector database is not initialized. Please create the index first.")
@@ -114,7 +94,7 @@ def get_llm_response(query: str, db: FAISS) -> str:
 
     client = Groq(api_key=api_key)
     response = client.chat.completions.create(
-        model="llama3-70b-8192",
+        model="llama-3.1-8b-instant",  # <-- Changed to valid Groq model
         messages=[
             {"role": "system", "content": "You are a helpful assistant for code understanding."},
             {"role": "user", "content": f"{content}\n\nQuestion: {query}"}
