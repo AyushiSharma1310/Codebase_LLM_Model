@@ -136,19 +136,28 @@ with tab1:
 # --- Tab 2: File Viewer ---
 with tab2:
     st.subheader("📑 Files in Uploaded Project")
-    if not codebase_path or not os.path.exists(codebase_path):
+
+    # Use session_state current_file to build codebase path
+    current_project = st.session_state.get("current_file")
+    if not current_project:
         st.info("📂 No code files uploaded yet.")
     else:
-        for root, _, files in os.walk(codebase_path):
-            for file in files:
-                file_path = os.path.join(root, file)
-                try:
-                    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-                        code = f.read()
-                    with st.expander(f"📄 {file}"):
-                        st.code(code, language="python")
-                except Exception as e:
-                    st.error(f"Error reading {file}: {e}")
+        codebase_path = os.path.join("vectorstore", current_project)
+        if not os.path.exists(codebase_path):
+            st.info("📂 No code files uploaded yet.")
+        else:
+            for root, _, files in os.walk(codebase_path):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    try:
+                        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                            code = f.read()
+                        # Show relative path instead of full path
+                        rel_path = os.path.relpath(file_path, codebase_path)
+                        with st.expander(f"📄 {rel_path}"):
+                            st.code(code, language="python")
+                    except Exception as e:
+                        st.error(f"⚠️ Error reading {file}: {e}")
 
 # --- Tab 3: Stats ---
 with tab3:
