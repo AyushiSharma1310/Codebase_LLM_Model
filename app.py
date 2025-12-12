@@ -42,7 +42,9 @@ with st.sidebar.expander("ℹ️ How to Use"):
     4. You can switch between previously indexed projects below.
     """)
 
-codebase_path = "codebase"
+# --- Codebase Path ---
+base_vectorstore = "vectorstore"
+codebase_path = None
 
 # --- Switch Between Indexed Projects ---
 if st.session_state.db_map:
@@ -57,7 +59,7 @@ if st.session_state.db_map:
 
 # --- Clear Current Session ---
 if clear_button:
-    if os.path.exists(codebase_path):
+    if codebase_path and os.path.exists(codebase_path):
         shutil.rmtree(codebase_path)
     for key in ["uploaded", "index_created", "db", "current_file", "processed_docs"]:
         st.session_state[key] = None
@@ -68,8 +70,7 @@ if uploaded_file and not st.session_state.get("uploaded"):
     uploaded_name = uploaded_file.name.split(".")[0]
     st.session_state.current_file = uploaded_name
 
-    # Define the new codebase path inside vectorstore
-    codebase_path = os.path.join("vectorstore", uploaded_name)
+    codebase_path = os.path.join(base_vectorstore, uploaded_name)
     if os.path.exists(codebase_path):
         shutil.rmtree(codebase_path)
     os.makedirs(codebase_path, exist_ok=True)
@@ -91,7 +92,7 @@ if index_button:
     if not name:
         st.sidebar.warning("⚠️ Please upload a codebase.")
     else:
-        codebase_path = os.path.join("vectorstore", name)  # NEW: Point to the extracted folder
+        codebase_path = os.path.join(base_vectorstore, name)
         with st.spinner("🔍 Indexing your codebase..."):
             try:
                 docs = load_and_split_code(codebase_path)
@@ -99,7 +100,7 @@ if index_button:
                 if not docs:
                     st.sidebar.error("❌ No readable files found.")
                 else:
-                    db = create_or_load_index(docs, codebase_path)  # Index stored in same path
+                    db = create_or_load_index(docs, codebase_path)
                     st.session_state.db = db
                     st.session_state.db_map[name] = db
                     st.session_state.index_created = True
@@ -135,7 +136,7 @@ with tab1:
 # --- Tab 2: File Viewer ---
 with tab2:
     st.subheader("📑 Files in Uploaded Project")
-    if not os.path.exists(codebase_path):
+    if not codebase_path or not os.path.exists(codebase_path):
         st.info("📂 No code files uploaded yet.")
     else:
         for root, _, files in os.walk(codebase_path):
